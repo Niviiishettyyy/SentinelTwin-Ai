@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+
+  body {
+    @apply font-sans antialiased text-ink;
+    background: #0B0F19;
+    position: relative;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(to right, rgba(56, 189, 248, 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(56, 189, 248, 0.08) 1px, transparent 1px);
+    background-size: 44px 44px;
+    opacity: 0.14;
+  }
+
+  ::selection {
+    @apply bg-accent/30;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-[#111625]/80 backdrop-blur-md border border-[#1F2937] rounded-lg shadow-card;
+  }
+
+  .btn-primary {
+    @apply bg-[#2DD4BF] text-black font-medium px-4 py-2 rounded-md transition;
+    box-shadow: 0 0 0 rgba(45, 212, 191, 0);
+  }
+  .btn-primary:hover {
+    @apply brightness-110;
+    transform: scale(1.02);
+    box-shadow: 0 0 24px rgba(45, 212, 191, 0.22);
+  }
+  .btn-primary:active {
+    @apply bg-black text-[#2DD4BF];
+  }
+  .btn-primary:disabled {
+    @apply bg-[#34D399]/20 text-[#34D399] border border-[#34D399]/30 cursor-not-allowed brightness-100;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .btn-secondary {
+    @apply bg-[#111625]/70 border border-[#1F2937] text-ink font-medium px-4 py-2 rounded-md transition;
+  }
+  .btn-secondary:hover {
+    @apply border-[#2DD4BF]/60;
+    transform: scale(1.02);
+  }
+  .btn-secondary:active {
+    @apply bg-black;
+  }
+
+  .pill {
+    @apply text-xs font-mono px-2 py-0.5 rounded-full border;
+  }
+  .pill-critical { @apply text-critical border-critical/40 bg-critical/10; }
+  .pill-warning  { @apply text-warning border-warning/40 bg-warning/10; }
+  .pill-success  { @apply text-[#34D399] border-[#34D399]/40 bg-[#34D399]/10; }
+  .pill-muted    { @apply text-muted border-[#1F2937] bg-white/5; }
+
+  .terminal-input {
+    @apply bg-[#EBF1FA] text-black border border-[#1F2937] rounded-md px-3 py-2 text-sm outline-none transition;
+  }
+  .terminal-input:focus {
+    @apply border-[#2DD4BF]/70;
+    box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.12);
+  }
+
+  .navlink {
+    @apply flex items-center gap-3 px-3 py-2 rounded-md text-sm transition;
+  }
+
+.live-pulse {
+    animation: livePulse 1.6s ease-in-out infinite;
+  }
+  @keyframes livePulse {
+    0%, 100% { border-color: rgba(45, 212, 191, 0.15); box-shadow: none; }
+    50% { border-color: rgba(45, 212, 191, 0.7); box-shadow: 0 0 22px rgba(45, 212, 191, 0.18); }
+  }
+
+  .route-transition {
+    animation: routeIn 300ms ease-out both;
+  }
+  @keyframes routeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0px); }
+  }
+}
+
+
