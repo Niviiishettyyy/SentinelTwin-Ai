@@ -40,3 +40,18 @@ class SettingsPreference(Base):
     user_id = Column(Integer, nullable=False)
     key = Column(String, nullable=False)
     value = Column(String, nullable=False)
+
+
+class AnalystLabel(Base):
+    """
+    Blind human risk labels, collected independently of the formula's
+    own output, used to compute rank correlation (Kendall's tau) between
+    the composite risk formula and human judgment -- Analyst Consensus
+    Calibration.
+    """
+    __tablename__ = "analyst_labels"
+    id = Column(Integer, primary_key=True, index=True)
+    node_id = Column(String, nullable=False)
+    labeler = Column(String, nullable=False)
+    risk_rating = Column(Integer, nullable=False)  # 1 (lowest) to 5 (highest), analyst's own judgment
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())

@@ -33,7 +33,12 @@ export default function Threats() {
   const apply = async (t: ThreatOut, rec: RecommendationOut) => {
     try {
       await applyRecommendation(t.affected_assets[0], rec.action, "contained", rec.risk_reduction);
-      setAppliedNote(`Logged "${rec.action}" as applied — future recommendations will factor this in.`);
+      setAppliedNote(`Logged "${rec.action}" as applied — the adaptive engine will factor this outcome into future rankings.`);
+      setRecs((prev) => {
+        const copy = { ...prev };
+        delete copy[t.id]; // force re-fetch next expand so the new bandit stats show
+        return copy;
+      });
       setTimeout(() => setAppliedNote(null), 3000);
     } catch {
       setAppliedNote("Could not log the action. Is the backend running?");
@@ -44,7 +49,7 @@ export default function Threats() {
     <div>
       <header className="mb-6">
         <h1 className="text-xl font-semibold">Threats</h1>
-        <p className="text-sm text-muted mt-1">Predicted threats ranked by risk. Expand a row for evidence and recommended defenses.</p>
+        <p className="text-sm text-muted mt-1">Predicted threats ranked by risk. Expand a row for evidence and adaptive recommended defenses.</p>
       </header>
 
       {error && <div className="card p-4 border-warning/40 text-warning text-sm mb-6">{error}</div>}
@@ -94,7 +99,12 @@ export default function Threats() {
                   </div>
 
                   <div>
-                    <p className="text-xs text-muted uppercase tracking-wide mb-2">Recommended defenses</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <p className="text-xs text-muted uppercase tracking-wide">Recommended defenses</p>
+                      {threatRecs && threatRecs.length > 0 && threatRecs[0].is_adaptive && (
+                        <span className="pill pill-success">adaptive (UCB1 bandit)</span>
+                      )}
+                    </div>
                     {recsLoading && !threatRecs && <p className="text-sm text-muted">Comparing mitigation strategies...</p>}
                     {threatRecs && threatRecs.length === 0 && (
                       <p className="text-sm text-muted">No candidate actions apply to this asset.</p>
@@ -122,10 +132,13 @@ export default function Threats() {
                               </div>
                             </div>
                             <p className="text-xs text-muted mt-2">{rec.rationale}</p>
-                            <div className="flex gap-2 mt-2">
+                            <div className="flex gap-2 mt-2 flex-wrap">
                               <span className="pill pill-success">-{Math.round(rec.risk_reduction * 100)}% risk</span>
                               <span className="pill pill-warning">{Math.round(rec.operational_cost * 100)}% op. cost</span>
                               <span className="pill pill-muted">{Math.round(rec.historical_success * 100)}% historical success</span>
+                              {rec.exploration_bonus > 0.01 && (
+                                <span className="pill pill-muted">+{rec.exploration_bonus.toFixed(3)} exploration</span>
+                              )}
                             </div>
                           </div>
                         ))}

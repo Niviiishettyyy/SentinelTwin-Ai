@@ -2,24 +2,26 @@ import { useState } from "react";
 import { runSimulation, SimulationResult } from "../api/client";
 
 const SCENARIOS = [
-  "External Foothold -> Lateral Movement -> Domain Compromise",
-  "Insider Credential Misuse",
-  "Ransomware Propagation",
+  { label: "External Foothold -> Lateral Movement -> Domain Compromise", entryNode: undefined },
+  { label: "Insider Credential Misuse (host-01)", entryNode: "host-01" },
+  { label: "Ransomware Propagation (from host-12, via file share)", entryNode: "host-12" },
 ];
 
 export default function SimulationCenter() {
-  const [scenario, setScenario] = useState(SCENARIOS[0]);
+  const [scenarioIdx, setScenarioIdx] = useState(0);
   const [result, setResult] = useState<SimulationResult | null>(null);
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const scenario = SCENARIOS[scenarioIdx];
 
   const start = async () => {
     setLoading(true);
     setError(null);
     setResult(null);
     try {
-      const r = await runSimulation(scenario);
+      const r = await runSimulation(scenario.label, scenario.entryNode);
       setResult(r);
       setActiveStep(0);
     } catch {
@@ -40,12 +42,12 @@ export default function SimulationCenter() {
         <label className="text-xs text-muted uppercase tracking-wide">Scenario</label>
         <div className="flex gap-3 mt-2">
           <select
-            value={scenario}
-            onChange={(e) => setScenario(e.target.value)}
+            value={scenarioIdx}
+            onChange={(e) => setScenarioIdx(parseInt(e.target.value))}
             className="flex-1 bg-raised border border-border rounded-md px-3 py-2 text-sm"
           >
-            {SCENARIOS.map((s) => (
-              <option key={s} value={s}>{s}</option>
+            {SCENARIOS.map((s, i) => (
+              <option key={s.label} value={i}>{s.label}</option>
             ))}
           </select>
           <button className="btn-primary" onClick={start} disabled={loading}>
@@ -94,6 +96,10 @@ export default function SimulationCenter() {
                         <span className="pill pill-warning">risk {s.risk_delta.toFixed(2)}</span>
                       </div>
                       <p className="text-xs text-muted mt-1">{s.description}</p>
+                      <div className="flex gap-2 mt-2">
+                        <span className="pill pill-muted">{s.tactic}</span>
+                        <span className="pill pill-muted font-mono">{s.technique_id}</span>
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -102,6 +108,13 @@ export default function SimulationCenter() {
                   <p className="text-xs text-muted uppercase tracking-wide mb-2">Step {activeStep + 1} of {result.steps.length}</p>
                   <p className="font-mono text-sm">{result.steps[activeStep].node}</p>
                   <p className="text-sm text-muted mt-2">{result.steps[activeStep].description}</p>
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <p className="text-xs text-muted uppercase tracking-wide mb-1">MITRE ATT&CK</p>
+                    <p className="text-sm">{result.steps[activeStep].tactic}</p>
+                    <p className="text-xs font-mono text-accent mt-0.5">
+                      {result.steps[activeStep].technique_id} — {result.steps[activeStep].technique_name}
+                    </p>
+                  </div>
                 </div>
               </div>
             </>

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, engine
-from app.routers import auth, graph, threats, simulate, assistant, reports, settings, upload, recommendations
+from app.routers import auth, graph, threats, simulate, assistant, reports, settings, upload, recommendations, ml, benchmark, calibration, efficiency, sweep
 
 Base.metadata.create_all(bind=engine)
 
@@ -25,7 +25,11 @@ app.include_router(reports.router)
 app.include_router(settings.router)
 app.include_router(upload.router)
 app.include_router(recommendations.router)
-
+app.include_router(ml.router)
+app.include_router(benchmark.router)
+app.include_router(calibration.router)
+app.include_router(efficiency.router)
+app.include_router(sweep.router)
 
 @app.get("/api/health")
 def health():

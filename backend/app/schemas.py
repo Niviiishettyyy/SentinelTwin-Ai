@@ -54,6 +54,10 @@ class SimulationStep(BaseModel):
     action: str
     risk_delta: float
     description: str
+    # --- MITRE ATT&CK mapping (new) ---
+    tactic: str = "Unknown"
+    technique_id: str = "N/A"
+    technique_name: str = "N/A"
 
 
 class SimulationResult(BaseModel):
@@ -71,6 +75,9 @@ class RecommendationOut(BaseModel):
     operational_cost: float
     historical_success: float
     rationale: str
+    # --- Adaptive/bandit engine fields (new) ---
+    is_adaptive: bool = False
+    exploration_bonus: float = 0.0
 
 
 class AssistantQuery(BaseModel):
@@ -81,3 +88,17 @@ class AssistantAnswer(BaseModel):
     answer: str
     confidence: float
     sources: List[str]
+
+
+# --- SHAP explainability (new) ---
+class FeatureContribution(BaseModel):
+    feature: str
+    value: float
+    shap_value: float
+
+
+class ShapExplanation(BaseModel):
+    anomaly_score: float
+    base_value: float
+    contributions: List[FeatureContribution]
+    model_loaded: bool

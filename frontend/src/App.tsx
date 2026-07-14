@@ -9,6 +9,8 @@ import Threats from "./pages/Threats";
 import Assistant from "./pages/Assistant";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import ModelPlayground from "./pages/ModelPlayground";
+import Evaluation from "./pages/Evaluation";
 
 export default function App() {
   return (
@@ -27,6 +29,8 @@ export default function App() {
         <Route path="/threats" element={<Threats />} />
         <Route path="/assistant" element={<Assistant />} />
         <Route path="/reports" element={<Reports />} />
+        <Route path="/model-playground" element={<ModelPlayground />} />
+        <Route path="/evaluation" element={<Evaluation />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
     </Routes>

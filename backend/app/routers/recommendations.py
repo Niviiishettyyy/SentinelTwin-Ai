@@ -2,10 +2,11 @@
 Defense Recommendation module (Section 9.5 / 9b).
 
 Given a node (usually the top of a threat or the current point of a
-simulation), generates a catalog of candidate mitigation actions, scores
-each with the recommendation_score formula, and ranks them. Also lets the
-user log which action they took and its outcome, closing the loop into
-the Experience Engine (Section 9.7) so future rankings improve.
+simulation), generates a catalog of candidate mitigation actions and
+ranks them using an adaptive UCB1 multi-armed bandit score (see
+app.graph.scoring.adaptive_recommendation_score) driven by real logged
+outcomes from the Experience Engine. Also lets the user log which action
+they took and its outcome, closing the loop so future rankings improve.
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -13,8 +14,8 @@ from pydantic import BaseModel
 
 from app.database import get_db
 from app.graph.twin import twin
-from app.graph.scoring import score_all_nodes, recommendation_score
-from app.experience.ledger import historical_success_rate, log_incident
+from app.graph.scoring import score_all_nodes, adaptive_recommendation_score
+from app.experience.ledger import historical_success_rate, log_incident, bandit_stats
 from app import schemas, auth
 
 router = APIRouter(prefix="/api/recommendations", tags=["recommendations"])
@@ -45,6 +46,10 @@ def generate_recommendations(db: Session, node_id: str):
     exposure = node_data.get("exposure", "internal")
     pattern = _pattern_for_node(node_data)
 
+    bandit = bandit_stats(db, pattern)
+    per_action_stats = bandit["per_action"]
+    total_trials = bandit["total_trials"]
+
     recs = []
     for action, base_reduction, cost, applies_to in CANDIDATE_ACTIONS:
         if applies_to is not None and applies_to != exposure:
@@ -54,7 +59,20 @@ def generate_recommendations(db: Session, node_id: str):
         # node actually is right now -- a low-risk node has little to gain.
         risk_reduction = round(min(base_reduction * (0.5 + node_risk), 1.0), 4)
         hist_success = historical_success_rate(db, pattern, action)
-        score = recommendation_score(risk_reduction, cost, hist_success)
+
+        action_stats = per_action_stats.get(action, {"count": 0, "avg_reward": 0.5})
+        score, exploration_bonus = adaptive_recommendation_score(
+            risk_reduction=risk_reduction,
+            operational_cost=cost,
+            avg_reward=action_stats["avg_reward"] if action_stats["count"] > 0 else 0.5,
+            action_trials=action_stats["count"],
+            total_trials=total_trials,
+        )
+
+        trial_note = (
+            f"tried {action_stats['count']}x, avg reward {action_stats['avg_reward']:.2f}"
+            if action_stats["count"] > 0 else "not yet tried for this pattern"
+        )
 
         recs.append(schemas.RecommendationOut(
             action=action,
@@ -64,9 +82,11 @@ def generate_recommendations(db: Session, node_id: str):
             historical_success=hist_success,
             rationale=(
                 f"Targets node '{node_id}' (risk {node_risk:.2f}, {exposure} exposure). "
-                f"Estimated risk reduction {risk_reduction:.2f} at operational cost {cost:.2f}; "
-                f"historically succeeded in {hist_success * 100:.0f}% of similar past incidents."
+                f"Estimated risk reduction {risk_reduction:.2f} at operational cost {cost:.2f}. "
+                f"Adaptive ranking: {trial_note}, exploration bonus {exploration_bonus:.3f}."
             ),
+            is_adaptive=True,
+            exploration_bonus=exploration_bonus,
         ))
 
     recs.sort(key=lambda r: r.score, reverse=True)

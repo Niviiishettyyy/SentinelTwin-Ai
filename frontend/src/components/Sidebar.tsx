@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Network, PlaySquare, ShieldAlert, MessageSquareText,
-  FileBarChart2, Settings as SettingsIcon, LogOut,
+  FileBarChart2, Settings as SettingsIcon, LogOut, FlaskConical, BarChart2,
 } from "lucide-react";
 
 const NAV = [
@@ -11,6 +11,8 @@ const NAV = [
   { to: "/threats", label: "Threats", icon: ShieldAlert },
   { to: "/assistant", label: "Assistant", icon: MessageSquareText },
   { to: "/reports", label: "Reports", icon: FileBarChart2 },
+  { to: "/model-playground", label: "Model Playground", icon: FlaskConical },
+  { to: "/evaluation", label: "Evaluation", icon: BarChart2 },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
@@ -75,4 +77,3 @@ export default function Sidebar() {
     </aside>
   );
 }
-

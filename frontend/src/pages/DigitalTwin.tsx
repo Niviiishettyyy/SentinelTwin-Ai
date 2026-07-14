@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import ReactFlow, {
   Background, Controls, MiniMap, Node, Edge, Position,
 } from "reactflow";
@@ -11,14 +11,41 @@ function riskColor(score: number) {
   return "#34D399";
 }
 
+const REFRESH_INTERVAL_MS = 8000;
+
 export default function DigitalTwin() {
   const [graph, setGraph] = useState<GraphOut | null>(null);
   const [selected, setSelected] = useState<NodeOut | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [liveMode, setLiveMode] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const intervalRef = useRef<number | null>(null);
+
+  const loadGraph = useCallback(() => {
+    fetchGraph()
+      .then((g) => {
+        setGraph(g);
+        setError(null);
+        setLastUpdated(new Date());
+      })
+      .catch(() => setError("Could not load the twin graph. Is the backend running and are you logged in?"));
+  }, []);
 
   useEffect(() => {
-    fetchGraph().then(setGraph).catch(() => setError("Could not load the twin graph. Is the backend running and are you logged in?"));
-  }, []);
+    loadGraph();
+  }, [loadGraph]);
+
+  useEffect(() => {
+    if (liveMode) {
+      intervalRef.current = window.setInterval(loadGraph, REFRESH_INTERVAL_MS);
+    } else if (intervalRef.current) {
+      window.clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    return () => {
+      if (intervalRef.current) window.clearInterval(intervalRef.current);
+    };
+  }, [liveMode, loadGraph]);
 
   const { nodes, edges } = useMemo(() => {
     if (!graph) return { nodes: [] as Node[], edges: [] as Edge[] };
@@ -54,11 +81,39 @@ export default function DigitalTwin() {
     setSelected(node.data.node as NodeOut);
   }, []);
 
+  const secondsAgo = lastUpdated ? Math.round((Date.now() - lastUpdated.getTime()) / 1000) : null;
+
   return (
     <div>
-      <header className="mb-6">
-        <h1 className="text-xl font-semibold">Digital Twin</h1>
-        <p className="text-sm text-muted mt-1">Interactive graph view of the organization. Click a node for detail.</p>
+      <header className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold">Digital Twin</h1>
+          <p className="text-sm text-muted mt-1">Interactive graph view of the organization. Click a node for detail.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          {lastUpdated && (
+            <span className="text-xs text-muted font-mono">
+              updated {secondsAgo}s ago
+            </span>
+          )}
+          <button
+            onClick={() => setLiveMode((v) => !v)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs font-medium transition ${
+              liveMode
+                ? "border-[#2DD4BF]/50 bg-[#2DD4BF]/10 text-[#2DD4BF]"
+                : "border-border text-muted hover:border-[#2DD4BF]/30"
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${liveMode ? "bg-[#2DD4BF] animate-pulse" : "bg-muted"}`} />
+            {liveMode ? "Live" : "Live off"}
+          </button>
+          <button
+            onClick={loadGraph}
+            className="px-3 py-1.5 rounded-md border border-border text-xs text-muted hover:border-[#2DD4BF]/30 transition"
+          >
+            Refresh now
+          </button>
+        </div>
       </header>
 
       {error && <div className="card p-4 border-warning/40 text-warning text-sm mb-6">{error}</div>}
